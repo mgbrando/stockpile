@@ -52,31 +52,11 @@ createApolloServer({
 }).applyMiddleware({
   app: app
 });
-/*app.use(
-  "/graphiql",
-  graphiqlExpress({
-    endpointURL: "/graphql"
-  })
-);
-app.use(
-  "/graphql",
-  jsonParser,
-  graphqlExpress({
-    schema,
-    context: ({ req }) => ({
-      headers: req.headers,
-      jwtSecret: config.jwtSecret,
-      redisClient: redisClient
-    })
-  })
-);*/
 
 app.get("*", (req, res) => {
   const index = path.resolve(__dirname, "../../client/build", "index.html");
   res.sendFile(index);
 });
-
-//const getRedisClient
 
 let server;
 
