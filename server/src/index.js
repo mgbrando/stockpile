@@ -7,20 +7,23 @@ import config from "./config";
 //const session = require("express-session");
 //const LocalStrategy = require("passport-local").Strategy;
 //const cookieParser = require("cookie-parser");
-const bodyParser = require("body-parser");
+import bodyParser from "body-parser";
+//const bodyParser = require("body-parser");
 const jsonParser = bodyParser.json();
-const { graphqlExpress, graphiqlExpress } = require("apollo-server-express");
+//import { graphqlExpress, graphiqlExpress } from "apollo-server-express";
+//const { graphqlExpress, graphiqlExpress } = require("apollo-server-express");
 //const { User } = require("./models/user");
 //const authorizationRouter = require("./routers/authorizationRouter");
 //const registrationRouter = require("./routers/registrationRouter");
 //const { DATABASE_URL, PORT } = require("./config");
-const mongoose = require("mongoose");
-const schema = require("./schema.js");
+import mongoose from "mongoose";
+import createApolloServer from "./schema";
+/*const mongoose = require("mongoose");
+const schema = require("./schema.js");*/
 import redis from "redis";
-const redisClient = redis.createClient(config.cache);
-redisClient.on("connect", () => {
-  console.log("redis database connected");
-});
+import bluebird from "bluebird";
+bluebird.promisifyAll(redis.RedisClient.prototype);
+bluebird.promisifyAll(redis.Multi.prototype);
 
 const app = express();
 app.set("port", config.port);
@@ -31,7 +34,25 @@ app.use(
   })
 );
 app.use(express.static(path.resolve(__dirname, "../../client/build")));
-app.use(
+
+const { host, redisPort, password } = config.redisDB;
+const redisClient = redis.createClient(redisPort, host, {
+  no_ready_check: true
+});
+redisClient.on("connect", () => {
+  redisClient.auth(password, function(err) {
+    console.log("REDIS DATABASE connected...");
+    if (err) throw err;
+    else console.log("REDIS DATABASE authenticated...");
+  });
+});
+createApolloServer({
+  jwtSecret: config.jwtSecret,
+  redisClient: redisClient
+}).applyMiddleware({
+  app: app
+});
+/*app.use(
   "/graphiql",
   graphiqlExpress({
     endpointURL: "/graphql"
@@ -48,12 +69,14 @@ app.use(
       redisClient: redisClient
     })
   })
-);
+);*/
 
 app.get("*", (req, res) => {
   const index = path.resolve(__dirname, "../../client/build", "index.html");
   res.sendFile(index);
 });
+
+//const getRedisClient
 
 let server;
 
@@ -61,11 +84,14 @@ function runServer(databaseUrl = config.db, port = config.port) {
   return new Promise((resolve, reject) => {
     mongoose.connect(
       databaseUrl,
-      { useMongoClient: true },
+      //{ useMongoClient: true },
+      { useNewUrlParser: true },
       err => {
         if (err) {
           return reject(err);
         }
+        console.log("MONGO DATABASE connected...");
+
         server = app
           .listen(port, () => {
             console.log(`Your app is listening on port: ${port}`);
@@ -73,6 +99,7 @@ function runServer(databaseUrl = config.db, port = config.port) {
           })
           .on("error", err => {
             mongoose.disconnect();
+            redisClient.quit();
             reject(err);
           });
       }
@@ -84,6 +111,7 @@ function closeServer() {
   return mongoose.disconnect().then(() => {
     return new Promise((resolve, reject) => {
       console.log("Closing server");
+      redisClient.quit();
       server.close(err => {
         if (err) {
           return reject(err);
