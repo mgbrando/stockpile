@@ -1,25 +1,10 @@
-//const express = require("express");
 import express from "express";
-//const path = require("path");
 import path from "path";
 import config from "./config";
-//const passport = require("passport");
-//const session = require("express-session");
-//const LocalStrategy = require("passport-local").Strategy;
-//const cookieParser = require("cookie-parser");
 import bodyParser from "body-parser";
-//const bodyParser = require("body-parser");
 const jsonParser = bodyParser.json();
-//import { graphqlExpress, graphiqlExpress } from "apollo-server-express";
-//const { graphqlExpress, graphiqlExpress } = require("apollo-server-express");
-//const { User } = require("./models/user");
-//const authorizationRouter = require("./routers/authorizationRouter");
-//const registrationRouter = require("./routers/registrationRouter");
-//const { DATABASE_URL, PORT } = require("./config");
 import mongoose from "mongoose";
 import createApolloServer from "./schema";
-/*const mongoose = require("mongoose");
-const schema = require("./schema.js");*/
 import redis from "redis";
 import bluebird from "bluebird";
 bluebird.promisifyAll(redis.RedisClient.prototype);
@@ -64,7 +49,6 @@ function runServer(databaseUrl = config.db, port = config.port) {
   return new Promise((resolve, reject) => {
     mongoose.connect(
       databaseUrl,
-      //{ useMongoClient: true },
       { useNewUrlParser: true },
       err => {
         if (err) {
